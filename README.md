@@ -1,10 +1,7 @@
-<div align="center">
-    <img src="./images/coderco.jpg" alt="CoderCo" width="300"/>
-</div>
 
-# URL Shortener - CoderCo ECS Project v2
+# URL Shortener - ECS Project
 
-A URL shortener with click analytics on AWS. Three services, one cluster. The application code is provided. You build everything else.
+A URL shortener with click analytics on AWS. Three services, one cluster.
 
 ## Services
 
@@ -20,7 +17,7 @@ Read the code. Environment variables and endpoints are in the source files.
 
 ## Your Job
 
-Write the Dockerfiles. Write the Terraform. Write the CI/CD pipeline. Deploy all three services to ECS Fargate on AWS.
+<mark>Write the Dockerfiles. Write the Terraform. Write the CI/CD pipeline. Deploy all three services to ECS Fargate on AWS.</mark>
 
 ### Requirements
 
@@ -40,7 +37,7 @@ Write the Dockerfiles. Write the Terraform. Write the CI/CD pipeline. Deploy all
 
 You've deployed the service. Now a developer merges a PR and expects their change live within minutes - safely, with zero downtime.
 
-Design and document the full deployment workflow in your README. Code merge to live traffic.
+<mark>Design and document the full deployment workflow in your README. Code merge to live traffic </mark>
 
 ### Deliverables
 
