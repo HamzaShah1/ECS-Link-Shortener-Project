@@ -1,0 +1,15 @@
+#stage 1 - build the go executable
+FROM golang:1.23 AS builder
+WORKDIR /worker
+COPY go.mod .
+RUN go mod download
+COPY . .
+RUN go build -o worker main.go
+
+
+#stage 2 - copy executable and run it
+FROM alpine:latest
+COPY --from=builder /worker/worker /worker
+CMD ["/worker"]
+
+
