@@ -71,4 +71,3 @@ docker compose up --build
 
 [LocalStack](https://docs.localstack.cloud/getting-started/) works for local testing of SQS.
 
-Everything else is on you. Commit small. Good luck.
