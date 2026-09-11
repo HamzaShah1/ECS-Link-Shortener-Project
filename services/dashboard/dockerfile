@@ -1,0 +1,12 @@
+#stage 1 make the go executable
+FROM golang:1.23 AS builder
+WORKDIR /dashboard
+COPY go.mod .
+RUN go mod download
+COPY . .
+RUN go build -o dashboard main.go
+
+#stage 2 copy the go executable and run it
+FROM alpine:latest
+COPY --from=builder /dashboard/dashboard /dashboard
+CMD ["/dashboard"]
