@@ -4,7 +4,7 @@ WORKDIR /worker
 COPY go.mod .
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED go build -o worker main.go
+RUN CGO_ENABLED=0 go build -o worker main.go
 
 
 #stage 2 - copy executable and run it
