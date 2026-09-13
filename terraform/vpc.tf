@@ -120,4 +120,21 @@ resource "aws_vpc_endpoint" "secrets_manager" {
   private_dns_enabled = true
 }
 
+resource "aws_vpc_endpoint" "sqs_endpoint" {
+  vpc_id              = aws_vpc.vpc.id
+  service_name        = "com.amazonaws.eu-west-2.sqs"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = [aws_subnet.subnet_2.id, aws_subnet.subnet_4.id]
+  security_group_ids  = [aws_security_group.vpc_endpoint_security_group.id]
+  private_dns_enabled = true
+}
+
+resource "aws_vpc_endpoint" "logs" {
+  vpc_id              = aws_vpc.vpc.id
+  service_name        = "com.amazonaws.eu-west-2.logs"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = [aws_subnet.subnet_2.id, aws_subnet.subnet_4.id]
+  security_group_ids  = [aws_security_group.vpc_endpoint_security_group.id]
+  private_dns_enabled = true
+}
 

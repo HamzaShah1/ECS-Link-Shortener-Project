@@ -65,6 +65,17 @@ resource "aws_ecs_task_definition" "api" {
           valueFrom = "arn:aws:secretsmanager:eu-west-2:577638388003:secret:url-shortener/database-url-rTtFnB"
         }
       ]
+
+      environment = [
+        {
+          name  = "SQS_QUEUE_URL"
+          value = aws_sqs_queue.click_events.url
+        },
+        {
+          name  = "REDIS_URL"
+          value = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:6379"
+        }
+      ]
     }
   ])
 }
@@ -133,6 +144,13 @@ resource "aws_ecs_task_definition" "worker" {
           awslogs-stream-prefix = "worker"
         }
       }
+      environment = [
+        {
+          name  = "SQS_QUEUE_URL"
+          value = aws_sqs_queue.click_events.url
+        }
+      ]
+
     }
   ])
 }
