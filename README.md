@@ -56,7 +56,7 @@ You've deployed the service. Now a developer merges a PR and expects their chang
 docker compose up --build
 ```
 
----
+---22
 
 ## Grading
 
@@ -70,4 +70,3 @@ docker compose up --build
 **Tear down when done.** ALB + WAF cost money even idle.
 
 [LocalStack](https://docs.localstack.cloud/getting-started/) works for local testing of SQS.
-
