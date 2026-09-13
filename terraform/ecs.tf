@@ -34,7 +34,7 @@ resource "aws_ecs_task_definition" "api" {
   memory                   = 512
 
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
-  task_role_arn      = aws_iam_role.ecs_task_role.arn
+  task_role_arn      = aws_iam_role.api_task_role.arn
 
   container_definitions = jsonencode([
     {
@@ -59,6 +59,12 @@ resource "aws_ecs_task_definition" "api" {
           awslogs-stream-prefix = "api"
         }
       }
+      secrets = [
+        {
+          name      = "DATABASE_URL"
+          valueFrom = "arn:aws:secretsmanager:eu-west-2:577638388003:secret:url-shortener/database-url-rTtFnB"
+        }
+      ]
     }
   ])
 }
@@ -71,7 +77,7 @@ resource "aws_ecs_task_definition" "dashboard" {
   memory                   = 512
 
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
-  task_role_arn      = aws_iam_role.ecs_task_role.arn
+  task_role_arn      = aws_iam_role.dashboard_task_role.arn
 
   container_definitions = jsonencode([
     {
@@ -108,7 +114,7 @@ resource "aws_ecs_task_definition" "worker" {
   memory                   = 512
 
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
-  task_role_arn      = aws_iam_role.ecs_task_role.arn
+  task_role_arn      = aws_iam_role.worker_task_role.arn
 
   container_definitions = jsonencode([
     {

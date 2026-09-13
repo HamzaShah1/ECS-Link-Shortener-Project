@@ -110,3 +110,14 @@ resource "aws_vpc_endpoint" "s3" {
     aws_route_table.private.id
   ]
 }
+
+resource "aws_vpc_endpoint" "secrets_manager" {
+  vpc_id              = aws_vpc.vpc.id
+  service_name        = "com.amazonaws.eu-west-2.secretsmanager"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = [aws_subnet.subnet_2.id, aws_subnet.subnet_4.id]
+  security_group_ids  = [aws_security_group.vpc_endpoint_security_group.id]
+  private_dns_enabled = true
+}
+
+
