@@ -1,5 +1,8 @@
 resource "aws_vpc" "vpc" {
   cidr_block = "10.0.0.0/16"
+
+  enable_dns_support   = true
+  enable_dns_hostnames = true
 }
 
 resource "aws_subnet" "subnet_1" {
@@ -78,4 +81,32 @@ resource "aws_route_table_association" "association_subnet_2" {
 resource "aws_route_table_association" "association_subnet_4" {
   subnet_id      = aws_subnet.subnet_4.id
   route_table_id = aws_route_table.private.id
+}
+
+resource "aws_vpc_endpoint" "ecr_api" {
+  vpc_id              = aws_vpc.vpc.id
+  service_name        = "com.amazonaws.eu-west-2.ecr.api"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = [aws_subnet.subnet_2.id, aws_subnet.subnet_4.id]
+  security_group_ids  = [aws_security_group.vpc_endpoint_security_group.id]
+  private_dns_enabled = true
+}
+
+resource "aws_vpc_endpoint" "ecr_dkr" {
+  vpc_id              = aws_vpc.vpc.id
+  service_name        = "com.amazonaws.eu-west-2.ecr.dkr"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = [aws_subnet.subnet_2.id, aws_subnet.subnet_4.id]
+  security_group_ids  = [aws_security_group.vpc_endpoint_security_group.id]
+  private_dns_enabled = true
+}
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.vpc.id
+  service_name      = "com.amazonaws.eu-west-2.s3"
+  vpc_endpoint_type = "Gateway"
+
+  route_table_ids = [
+    aws_route_table.private.id
+  ]
 }

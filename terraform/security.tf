@@ -61,3 +61,17 @@ resource "aws_vpc_security_group_ingress_rule" "redis_ingress_rule" {
   from_port                    = 6379
   to_port                      = 6379
 }
+
+resource "aws_security_group" "vpc_endpoint_security_group" {
+  name        = "vpc_endpoint_security_group"
+  description = "controls traffic to VPC endpoints"
+  vpc_id      = aws_vpc.vpc.id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "vpc_endpoint_ingress_rule" {
+  security_group_id            = aws_security_group.vpc_endpoint_security_group.id
+  referenced_security_group_id = aws_security_group.ecs_security_group.id
+  ip_protocol                  = "tcp"
+  from_port                    = 443
+  to_port                      = 443
+}
