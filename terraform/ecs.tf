@@ -13,3 +13,120 @@ resource "aws_ecr_repository" "dashboard" {
 resource "aws_ecr_repository" "worker" {
   name = "ecr-worker-repo"
 }
+
+resource "aws_cloudwatch_log_group" "api" {
+  name = "/ecs/api"
+}
+
+resource "aws_cloudwatch_log_group" "dashboard" {
+  name = "/ecs/dashboard"
+}
+
+resource "aws_cloudwatch_log_group" "worker" {
+  name = "/ecs/worker"
+}
+
+resource "aws_ecs_task_definition" "api" {
+  family                   = "api"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = 256
+  memory                   = 512
+
+  execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn      = aws_iam_role.ecs_task_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name  = "api"
+      image = "${aws_ecr_repository.api.repository_url}:latest"
+
+      cpu    = 256
+      memory = 512
+
+      portMappings = [
+        {
+          containerPort = 8080
+          protocol      = "tcp"
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.api.name
+          awslogs-region        = "eu-west-2"
+          awslogs-stream-prefix = "api"
+        }
+      }
+    }
+  ])
+}
+
+resource "aws_ecs_task_definition" "dashboard" {
+  family                   = "dashboard"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = 256
+  memory                   = 512
+
+  execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn      = aws_iam_role.ecs_task_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name  = "dashboard"
+      image = "${aws_ecr_repository.dashboard.repository_url}:latest"
+
+      cpu    = 256
+      memory = 512
+
+      portMappings = [
+        {
+          containerPort = 8081
+          protocol      = "tcp"
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.dashboard.name
+          awslogs-region        = "eu-west-2"
+          awslogs-stream-prefix = "dashboard"
+        }
+      }
+    }
+  ])
+}
+
+resource "aws_ecs_task_definition" "worker" {
+  family                   = "worker"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = 256
+  memory                   = 512
+
+  execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn      = aws_iam_role.ecs_task_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name  = "worker"
+      image = "${aws_ecr_repository.worker.repository_url}:latest"
+
+      cpu    = 256
+      memory = 512
+
+      logConfiguration = {
+        logDriver = "awslogs"
+
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.worker.name
+          awslogs-region        = "eu-west-2"
+          awslogs-stream-prefix = "worker"
+        }
+      }
+    }
+  ])
+}
