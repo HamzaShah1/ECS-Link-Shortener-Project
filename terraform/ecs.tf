@@ -62,7 +62,7 @@ resource "aws_ecs_task_definition" "api" {
       secrets = [
         {
           name      = "DATABASE_URL"
-          valueFrom = "arn:aws:secretsmanager:eu-west-2:577638388003:secret:url-shortener/database-url-rTtFnB"
+          valueFrom = data.aws_secretsmanager_secret.database_url.arn
         }
       ]
 
@@ -113,6 +113,13 @@ resource "aws_ecs_task_definition" "dashboard" {
           awslogs-stream-prefix = "dashboard"
         }
       }
+      secrets = [
+        {
+          name      = "DATABASE_URL"
+          valueFrom = data.aws_secretsmanager_secret.database_url.arn
+        }
+      ]
+
     }
   ])
 }
@@ -148,6 +155,13 @@ resource "aws_ecs_task_definition" "worker" {
         {
           name  = "SQS_QUEUE_URL"
           value = aws_sqs_queue.click_events.url
+        }
+      ]
+
+      secrets = [
+        {
+          name      = "DATABASE_URL"
+          valueFrom = data.aws_secretsmanager_secret.database_url.arn
         }
       ]
 

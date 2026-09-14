@@ -34,6 +34,12 @@ resource "aws_vpc_security_group_ingress_rule" "ecs_ingress_rule" {
   to_port                      = 8080
 }
 
+resource "aws_vpc_security_group_egress_rule" "ecs_egress_rule" {
+  security_group_id = aws_security_group.ecs_security_group.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+}
+
 resource "aws_security_group" "rds_security_group" {
   name        = "rds_security_group"
   description = "controls traffic to RDS"
@@ -74,4 +80,20 @@ resource "aws_vpc_security_group_ingress_rule" "vpc_endpoint_ingress_rule" {
   ip_protocol                  = "tcp"
   from_port                    = 443
   to_port                      = 443
+}
+
+resource "aws_vpc_security_group_egress_rule" "dashboard_egress_rule" {
+  security_group_id            = aws_security_group.alb_security_group.id
+  referenced_security_group_id = aws_security_group.ecs_security_group.id
+  from_port                    = 8081
+  to_port                      = 8081
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "ecs_dashboard_ingress_rule" {
+  security_group_id            = aws_security_group.ecs_security_group.id
+  referenced_security_group_id = aws_security_group.alb_security_group.id
+  from_port                    = 8081
+  to_port                      = 8081
+  ip_protocol                  = "tcp"
 }

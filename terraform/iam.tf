@@ -1,3 +1,7 @@
+data "aws_secretsmanager_secret" "database_url" {
+  name = "url-shortener/database-url"
+}
+
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "ecs-task-execution-role"
 
@@ -35,7 +39,7 @@ resource "aws_iam_role_policy" "ecs_secrets_policy" {
         "secretsmanager:GetSecretValue"
       ]
 
-      Resource = aws_db_instance.postgres.master_user_secret[0].secret_arn
+      Resource = data.aws_secretsmanager_secret.database_url.arn
     }]
   })
 }

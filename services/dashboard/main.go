@@ -194,11 +194,16 @@ func getEnv(key, fallback string) string {
 
 func waitForDB() {
 	for i := 0; i < 30; i++ {
-		if err := db.Ping(); err == nil {
+		err := db.Ping()
+
+		if err == nil {
 			return
 		}
+
+		log.Printf("Database connection failed: %v", err)
 		log.Printf("Waiting for database... (%d/30)", i+1)
 		time.Sleep(time.Second)
 	}
+
 	log.Fatal("Database not ready after 30s")
 }
