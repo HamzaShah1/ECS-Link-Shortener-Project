@@ -4,14 +4,17 @@ resource "aws_ecs_cluster" "cluster" {
 
 resource "aws_ecr_repository" "api" {
   name = "ecr-api-repo"
+  force_delete = true
 }
 
 resource "aws_ecr_repository" "dashboard" {
   name = "ecr-dashboard-repo"
+  force_delete = true
 }
 
 resource "aws_ecr_repository" "worker" {
   name = "ecr-worker-repo"
+  force_delete = true
 }
 
 resource "aws_cloudwatch_log_group" "api" {
