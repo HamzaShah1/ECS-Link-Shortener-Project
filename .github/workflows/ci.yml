@@ -5,36 +5,36 @@ on:
 
 jobs: 
   build:
-    runs on: ubuntu-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: setup python
-        run: pip install python=3.12
+        uses:  actions/setup-python@v4
       - name: install dependencies
         run: |
-            cd /app
+            cd app
             python -m pip install --upgrade pip
             if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: run pytest
-        run:  pytest /tests
+        run:  pytest app/tests
       - name: setup go runner
-        # dont know what to put here
+        # use a github action to install go
       - name: test worker
         run: | 
-            cd /services/worker
-            go test ./..
+            cd services/worker
+            go test ./go.mod
       - name: test dashboard
         run: | 
-            cd /services/dashboard
-            go test ./..
+            cd services/dashboard
+            go test ./go.mod
       - name: build docker images
         run: |
-            docker build -t app-image
-            docker build -t worker-image
-            docker build -t dashboard-image
-            
+            docker build -t app-image app/
+            docker build -t worker-image services/worker/
+            docker build -t dashboard-image services/dashboard/
+
 
 
 
