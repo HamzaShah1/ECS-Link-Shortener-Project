@@ -1,0 +1,41 @@
+name: CI pipleine - test
+
+on: 
+  [push, pull_request]
+
+jobs: 
+  build:
+    runs on: ubuntu-latest
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v2
+      - name: setup python
+        run: pip install python=3.12
+      - name: install dependencies
+        run: |
+            cd /app
+            python -m pip install --upgrade pip
+            if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: run pytest
+        run:  pytest /tests
+      - name: setup go runner
+        # dont know what to put here
+      - name: test worker
+        run: | 
+            cd /services/worker
+            go test ./..
+      - name: test dashboard
+        run: | 
+            cd /services/dashboard
+            go test ./..
+      - name: build docker images
+        run: |
+            docker build -t app-image
+            docker build -t worker-image
+            docker build -t dashboard-image
+            
+
+
+
+
