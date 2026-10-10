@@ -10,30 +10,41 @@ jobs:
     steps:
       - name: checkout code
         uses: actions/checkout@v4
+
       - name: setup python
         uses:  actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: setup go runner
+        uses: actions/setup-go@v5
+        with: 
+          go-version: '1.24'
+        
       - name: install dependencies
+        working-directory: app
         run: |
-            cd app
-            python -m pip install --upgrade pip
-            if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
       - name: run pytest
         run:  pytest app/tests
-      - name: setup go runner
-        # use a github action to install go
+
       - name: test worker
         run: | 
-            cd services/worker
-            go test ./go.mod
+            working-directory: services/worker
+            go test ./...
+
       - name: test dashboard
         run: | 
-            cd services/dashboard
-            go test ./go.mod
+            working-directory: services/dashboard
+            go test ./...
+
       - name: build docker images
         run: |
-            docker build -t app-image app/
-            docker build -t worker-image services/worker/
-            docker build -t dashboard-image services/dashboard/
+            docker build --platform linux/amd64 -t app-image app/
+            docker build --platform linux/amd64 -t worker-image services/worker/
+            docker build --platform linux/amd64 -t dashboard-image services/dashboard/
 
 
 
