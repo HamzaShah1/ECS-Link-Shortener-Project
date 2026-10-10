@@ -3,7 +3,25 @@ name: CI pipleine - test
 on: 
   [push, pull_request]
 
-jobs: 
+jobs:
+  aws-auth-test:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
   build:
     runs-on: ubuntu-latest
 
@@ -45,8 +63,4 @@ jobs:
             docker build --platform linux/amd64 -t app-image app/
             docker build --platform linux/amd64 -t worker-image services/worker/
             docker build --platform linux/amd64 -t dashboard-image services/dashboard/
-
-
-
-
 
