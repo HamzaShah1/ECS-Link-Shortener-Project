@@ -54,31 +54,6 @@ jobs:
       contents: read
 
     steps:
-      - name: Inspect OIDC claims
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const tokenUrl = new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);
-            tokenUrl.searchParams.set('audience', 'sts.amazonaws.com');
-
-            const response = await fetch(tokenUrl, {
-              headers: {
-                Authorization: `Bearer ${process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}`
-              }
-            });
-
-            if (!response.ok) {
-              throw new Error(`OIDC request failed: ${response.status}`);
-            }
-
-            const data = await response.json();
-            const payload = JSON.parse(
-              Buffer.from(data.value.split('.')[1], 'base64url').toString()
-            );
-
-            console.log('OIDC subject:', payload.sub);
-            console.log('OIDC audience:', payload.aud);
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -87,3 +62,49 @@ jobs:
 
       - name: Verify AWS identity
         run: aws sts get-caller-identity
+  
+  publish-to-ecr:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: authenticate AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      
+      - name: log in to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: build the API image and push to ECR
+        run: |
+          docker buildx build \
+            --push --platform linux/amd64 \
+            -t ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_API_REPOSITORY }}:${{ github.sha }} \
+            -t ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_API_REPOSITORY }}:latest \
+            app/
+
+      - name: build the worker image and push to ECR
+        run: |
+          docker buildx build \
+            --push --platform linux/amd64 \
+            -t ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_WORKER_REPOSITORY }}:${{ github.sha }} \
+            -t ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_WORKER_REPOSITORY }}:latest \
+            services/worker
+
+      - name: build the Dashboard image and push to ECR
+        run: |
+          docker buildx build \
+            --push --platform linux/amd64 \
+            -t ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_DASHBOARD_REPOSITORY }}:${{ github.sha }} \
+            -t ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_DASHBOARD_REPOSITORY }}:latest \
+            services/dashboard
