@@ -31,13 +31,13 @@ jobs:
         run:  pytest app/tests
 
       - name: test worker
+        working-directory: services/worker
         run: | 
-            working-directory: services/worker
             go test ./...
 
       - name: test dashboard
+        working-directory: services/dashboard
         run: | 
-            working-directory: services/dashboard
             go test ./...
 
       - name: build docker images
