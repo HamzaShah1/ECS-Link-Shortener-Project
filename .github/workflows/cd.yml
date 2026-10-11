@@ -52,7 +52,7 @@ jobs:
         uses: dorny/paths-filter@v3
         id: changes
         with:
-          base: ${{ github.event.workflow_run.head_sha }}^
+          base: main
           filters: |
             api:
               - 'app/**'
