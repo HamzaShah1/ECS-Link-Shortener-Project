@@ -1,7 +1,12 @@
 export async function onRequest(context) {
   const response = await fetch(
     "https://dashboard.hamza-aws-project.com/top",
-    { method: context.request.method }
+    {
+      method: context.request.method,
+      headers: {
+        "Accept": "application/json",
+      },
+    }
   );
 
   return new Response(response.body, {
