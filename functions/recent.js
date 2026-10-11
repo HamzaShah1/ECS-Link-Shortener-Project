@@ -4,6 +4,7 @@ export async function onRequest(context) {
     {
       method: context.request.method,
       headers: {
+        "User-Agent": "Mozilla/5.0",
         "Accept": "application/json",
       },
     }
