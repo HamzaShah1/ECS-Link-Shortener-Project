@@ -1,0 +1,109 @@
+name: CD pipeline - deployment
+
+on:
+  workflow_run: 
+    workflows: ["CI pipeline - test"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+      
+      - name: configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: detect changed services
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          base: ${{ github.event.workflow_run.head_sha }}^
+          filters: |
+            api:
+              - 'app/**'
+            worker:
+              - 'services/worker/**'
+            dashboard:
+              - 'services/dashboard/**'
+            docs:
+              - '*.md'
+              - 'docs/**'
+
+      - name: show changed services
+        run: |
+          echo "API: ${{ steps.changes.outputs.api }}"
+          echo "Worker: ${{ steps.changes.outputs.worker }}"
+          echo "Dashboard: ${{ steps.changes.outputs.dashboard }}"
+          echo "Docs: ${{ steps.changes.outputs.docs }}"
+      
+      - name: Deploy API
+        env:
+          ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+        if: steps.changes.outputs.api == 'true'
+        run: |
+          TASK_DEF_ARN=$(aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services api \
+            --query 'services[0].taskDefinition' \
+            --output text)
+          
+          aws ecs describe-task-definition \
+            --task-definition "$TASK_DEF_ARN" \
+            --query 'taskDefinition' \
+            > api-task-definition.json
+            jq 'del(.taskDefinitionArn, .revision, .status, .requiredAttributes, .compatibilities, .registeredAt, .registeredBy)' api-task-definition.json > cleaned.json
+            mv cleaned.json api-task-definition.json
+
+      - name: Deploy worker
+        env:
+            ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+        if: steps.changes.outputs.worker == 'true'
+        run: |
+          TASK_DEF_ARN=$(aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services worker \
+            --query 'services[0].taskDefinition' \
+            --output text)
+          
+          aws ecs describe-task-definition \
+            --task-definition "$TASK_DEF_ARN" \
+            --query 'taskDefinition' \
+            > worker-task-definition.json
+            jq 'del(.taskDefinitionArn, .revision, .status, .requiredAttributes, .compatibilities, .registeredAt, .registeredBy)' api-task-definition.json > cleaned.json
+            mv cleaned.json worker-task-definition.json
+
+      - name: Deploy Dashboard
+        env:
+            ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+        if: steps.changes.outputs.dashboard == 'true'
+        run: |
+          TASK_DEF_ARN=$(aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services dashboard \
+            --query 'services[0].taskDefinition' \
+            --output text)
+          
+          aws ecs describe-task-definition \
+            --task-definition "$TASK_DEF_ARN" \
+            --query 'taskDefinition' \
+            > dashboard-task-definition.json
+            jq 'del(.taskDefinitionArn, .revision, .status, .requiredAttributes, .compatibilities, .registeredAt, .registeredBy)' api-task-definition.json > cleaned.json
+            mv cleaned.json dashboard-task-definition.json
+

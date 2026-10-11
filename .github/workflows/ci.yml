@@ -45,10 +45,6 @@ jobs:
           docker build --platform linux/amd64 -t worker-image services/worker/
           docker build --platform linux/amd64 -t dashboard-image services/dashboard/
 
-  aws-auth-test:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-
     permissions:
       id-token: write
       contents: read
