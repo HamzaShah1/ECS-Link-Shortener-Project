@@ -37,6 +37,17 @@ jobs:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
+      - name: Debug Git history
+        run: |
+          echo "HEAD:"
+          git log -1 --oneline
+          echo "Target commit:"
+          git cat-file -t "${{ github.event.workflow_run.head_sha }}"
+          echo "Parent commit:"
+          git rev-parse "${{ github.event.workflow_run.head_sha }}^"
+          echo "Current branch:"
+          git branch -avv
+
       - name: detect changed services
         uses: dorny/paths-filter@v3
         id: changes
