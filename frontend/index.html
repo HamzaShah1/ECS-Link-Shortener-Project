@@ -1,0 +1,215 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Linkly — URL Analytics</title>
+  <style>
+    :root {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #172033;
+      background: #f5f7fb;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    header {
+      background: #111827; color: white; padding: 22px 6%;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .brand { font-size: 22px; font-weight: 800; letter-spacing: -1px; }
+    .brand span { color: #7c9cff; }
+    header small { color: #b7c2d6; }
+    main { max-width: 1120px; margin: 36px auto; padding: 0 20px; }
+    h1 { font-size: clamp(27px, 4vw, 38px); margin: 0 0 8px; letter-spacing: -1.4px; }
+    .subtitle { color: #68738a; margin: 0 0 28px; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .card {
+      background: white; border: 1px solid #e5e9f2; border-radius: 15px;
+      padding: 22px; box-shadow: 0 4px 18px #17203308;
+    }
+    .metric-label { color: #68738a; font-size: 14px; }
+    .metric { font-size: 32px; font-weight: 750; margin-top: 10px; }
+    .section { margin-top: 24px; }
+    .section h2 { font-size: 18px; margin: 0 0 16px; }
+    form { display: flex; gap: 10px; }
+    input {
+      min-width: 0; flex: 1; border: 1px solid #dce2ed; border-radius: 9px;
+      padding: 13px 14px; font: inherit;
+    }
+    button {
+      border: 0; border-radius: 9px; padding: 12px 17px; font: inherit;
+      font-weight: 650; cursor: pointer; background: #315efb; color: white;
+    }
+    button:disabled { opacity: .6; cursor: wait; }
+    .result { margin-top: 14px; overflow-wrap: anywhere; }
+    .result a { color: #315efb; font-weight: 650; }
+    .muted { color: #68738a; font-size: 13px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 13px 10px; text-align: left; border-bottom: 1px solid #edf0f5; }
+    th { color: #68738a; font-weight: 600; }
+    td a { color: #315efb; text-decoration: none; }
+    .error { color: #c43232; }
+    footer { text-align: center; padding: 30px; color: #8590a4; font-size: 12px; }
+    @media (max-width: 650px) {
+      .grid { grid-template-columns: 1fr; }
+      form { flex-direction: column; }
+      header small { display: none; }
+      main { margin-top: 25px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">link<span>ly.</span></div>
+    <small>URL shortener & analytics</small>
+  </header>
+
+  <main>
+    <h1>Your links, at a glance.</h1>
+    <p class="subtitle">Create short links and track their performance.</p>
+
+    <section class="card">
+      <h2>Shorten a URL</h2>
+      <form id="shorten-form">
+        <input id="url-input" type="url" placeholder="https://example.com/your-long-url"
+               aria-label="URL to shorten" required>
+        <button id="shorten-button" type="submit">Create short link</button>
+      </form>
+      <div id="shorten-result" class="result" aria-live="polite"></div>
+    </section>
+
+    <section class="grid section">
+      <div class="card">
+        <div class="metric-label">Total URLs</div>
+        <div id="total-urls" class="metric">—</div>
+      </div>
+      <div class="card">
+        <div class="metric-label">Total clicks</div>
+        <div id="total-clicks" class="metric">—</div>
+      </div>
+      <div class="card">
+        <div class="metric-label">Clicks today (UTC)</div>
+        <div id="clicks-today" class="metric">—</div>
+      </div>
+    </section>
+
+    <section class="card section">
+      <h2>Top links</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Short code</th><th>Destination</th><th>Clicks</th></tr></thead>
+          <tbody id="top-links"><tr><td colspan="3">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card section">
+      <h2>Recent clicks</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Short code</th><th>User agent</th><th>Clicked at</th></tr></thead>
+          <tbody id="recent-clicks"><tr><td colspan="3">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+    <p id="load-status" class="muted" role="status"></p>
+  </main>
+
+  <footer>Linkly · Built with FastAPI, Go, PostgreSQL and AWS ECS</footer>
+
+  <script>
+    // The frontend is intended to be served from the same origin as the API.
+    const API_BASE = "";
+    const DASHBOARD_BASE = "";
+
+    const $ = id => document.getElementById(id);
+    const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, ch => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[ch]);
+
+    $("shorten-form").addEventListener("submit", async event => {
+      event.preventDefault();
+      const button = $("shorten-button");
+      const result = $("shorten-result");
+      button.disabled = true;
+      result.textContent = "Creating link…";
+
+      try {
+        const response = await fetch(`${API_BASE}/shorten`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: $("url-input").value.trim() })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || data.error || "Could not shorten URL");
+
+        const shortURL = data.short_url && data.short_url.startsWith("http")
+          ? data.short_url
+          : `https://hamza-aws-project.com/${data.short}`;
+
+        result.innerHTML = `<p>Your short link:</p>
+          <a href="${escapeHTML(shortURL)}" target="_blank" rel="noopener noreferrer">${escapeHTML(shortURL)}</a>
+          <button id="copy-link" type="button">Copy link</button>`;
+
+        $("copy-link").addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(shortURL);
+            $("copy-link").textContent = "Copied!";
+          } catch {
+            result.insertAdjacentHTML("beforeend", '<p class="muted">Copy unavailable. Select the link above.</p>');
+          }
+        });
+        await loadAnalytics();
+      } catch (error) {
+        result.innerHTML = `<p class="error">${escapeHTML(error.message)}</p>`;
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    async function getJSON(url) {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
+      return response.json();
+    }
+
+    async function loadAnalytics() {
+      const status = $("load-status");
+      try {
+        const [summary, top, recent] = await Promise.all([
+          getJSON(`${DASHBOARD_BASE}/summary`),
+          getJSON(`${DASHBOARD_BASE}/top`),
+          getJSON(`${DASHBOARD_BASE}/recent`)
+        ]);
+
+        $("total-urls").textContent = summary.total_urls ?? 0;
+        $("total-clicks").textContent = summary.total_clicks ?? 0;
+        $("clicks-today").textContent = summary.clicks_today ?? 0;
+
+        $("top-links").innerHTML = top.length ? top.map(item => `
+          <tr>
+            <td><a href="${escapeHTML(location.origin + "/" + item.short_code)}" target="_blank" rel="noopener noreferrer">${escapeHTML(item.short_code)}</a></td>
+            <td>${escapeHTML(item.url)}</td>
+            <td>${escapeHTML(item.clicks)}</td>
+          </tr>`).join("") : '<tr><td colspan="3">No links yet.</td></tr>';
+
+        $("recent-clicks").innerHTML = recent.length ? recent.map(item => `
+          <tr>
+            <td>${escapeHTML(item.short_code)}</td>
+            <td>${escapeHTML(item.user_agent)}</td>
+            <td>${escapeHTML(item.clicked_at)}</td>
+          </tr>`).join("") : '<tr><td colspan="3">No clicks yet.</td></tr>';
+
+        status.textContent = "Analytics updated successfully.";
+      } catch (error) {
+        status.textContent = "Analytics could not load. Check the dashboard endpoint and browser CORS settings.";
+        console.error(error);
+      }
+    }
+
+    loadAnalytics();
+  </script>
+</body>
+</html>
