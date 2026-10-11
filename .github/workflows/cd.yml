@@ -42,6 +42,7 @@ jobs:
         id: changes
         with:
           base: ${{ github.event.workflow_run.head_sha }}^
+          ref: ${{ github.event.workflow_run.head_sha }}
           filters: |
             api:
               - 'app/**'
