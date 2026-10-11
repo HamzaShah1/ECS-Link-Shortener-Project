@@ -48,11 +48,18 @@ jobs:
           echo "Current branch:"
           git branch -avv
 
+      - name: Get base commit
+        id: base
+        run: |
+          BASE_SHA=$(git rev-parse "${{ github.event.workflow_run.head_sha }}^")
+          echo "sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
+
       - name: detect changed services
         uses: dorny/paths-filter@v3
         id: changes
         with:
-          base: main
+          base: ${{ steps.base.outputs.sha }}
+          ref: ${{ github.event.workflow_run.head_sha }}
           filters: |
             api:
               - 'app/**'
