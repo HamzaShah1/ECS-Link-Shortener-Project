@@ -10,12 +10,19 @@ on:
 
 jobs:
   deploy:
-    if: github.event.workflow_run.conclusion == 'success'
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+
     runs-on: ubuntu-latest
 
     permissions:
       id-token: write
       contents: read
+
+    env:
+          ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
 
     steps:
       - name: checkout code
@@ -54,8 +61,6 @@ jobs:
           echo "Docs: ${{ steps.changes.outputs.docs }}"
       
       - name: Deploy API
-        env:
-          ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
         if: steps.changes.outputs.api == 'true'
         run: |
           TASK_DEF_ARN=$(aws ecs describe-services \
@@ -68,12 +73,27 @@ jobs:
             --task-definition "$TASK_DEF_ARN" \
             --query 'taskDefinition' \
             > api-task-definition.json
-            jq 'del(.taskDefinitionArn, .revision, .status, .requiredAttributes, .compatibilities, .registeredAt, .registeredBy)' api-task-definition.json > cleaned.json
-            mv cleaned.json api-task-definition.json
+          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' api-task-definition.json > cleaned.json
+          mv cleaned.json api-task-definition.json
+          jq '.containerDefinitions[0].image = "${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_API_REPOSITORY }}:${{ github.event.workflow_run.head_sha }}"' \
+            api-task-definition.json > updated.json
+          mv updated.json api-task-definition.json
+
+          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://api-task-definition.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service api \
+            --task-definition "$NEW_TASK_DEF_ARN"
+
+          aws ecs wait services-stable \
+            --cluster "$ECS_CLUSTER" \
+            --services api
 
       - name: Deploy worker
-        env:
-            ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
         if: steps.changes.outputs.worker == 'true'
         run: |
           TASK_DEF_ARN=$(aws ecs describe-services \
@@ -86,12 +106,27 @@ jobs:
             --task-definition "$TASK_DEF_ARN" \
             --query 'taskDefinition' \
             > worker-task-definition.json
-            jq 'del(.taskDefinitionArn, .revision, .status, .requiredAttributes, .compatibilities, .registeredAt, .registeredBy)' api-task-definition.json > cleaned.json
-            mv cleaned.json worker-task-definition.json
+          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' worker-task-definition.json > cleaned.json
+          mv cleaned.json worker-task-definition.json
+          jq '.containerDefinitions[0].image = "${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_WORKER_REPOSITORY }}:${{ github.event.workflow_run.head_sha }}"' \
+            worker-task-definition.json > updated.json
+          mv updated.json worker-task-definition.json
+
+          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://worker-task-definition.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service worker \
+            --task-definition "$NEW_TASK_DEF_ARN"
+          
+          aws ecs wait services-stable \
+            --cluster "$ECS_CLUSTER" \
+            --services worker
 
       - name: Deploy Dashboard
-        env:
-            ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
         if: steps.changes.outputs.dashboard == 'true'
         run: |
           TASK_DEF_ARN=$(aws ecs describe-services \
@@ -104,6 +139,23 @@ jobs:
             --task-definition "$TASK_DEF_ARN" \
             --query 'taskDefinition' \
             > dashboard-task-definition.json
-            jq 'del(.taskDefinitionArn, .revision, .status, .requiredAttributes, .compatibilities, .registeredAt, .registeredBy)' api-task-definition.json > cleaned.json
-            mv cleaned.json dashboard-task-definition.json
+          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' dashboard-task-definition.json > cleaned.json
+          mv cleaned.json dashboard-task-definition.json
+          jq '.containerDefinitions[0].image = "${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_DASHBOARD_REPOSITORY }}:${{ github.event.workflow_run.head_sha }}"' \
+            dashboard-task-definition.json > updated.json
+          mv updated.json dashboard-task-definition.json
+
+          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://dashboard-task-definition.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service dashboard \
+            --task-definition "$NEW_TASK_DEF_ARN"
+
+          aws ecs wait services-stable \
+            --cluster "$ECS_CLUSTER" \
+            --services dashboard
 
