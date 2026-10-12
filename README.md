@@ -4,8 +4,18 @@
 A URL shortener with click analytics on AWS. Three services, one cluster.
 
 ## Architecture
+# insert AWS diagram here
 
-## Why was RDS PostgreSQL chosen?
+## ENGINEERING DECISION: Why was RDS PostgreSQL chosen?
+I chose Amazon RDS because it is a FULLY MANAGED; relational; postgreSQL based database service. Rather than Amazon DynamoDB (which is non relational). Because it is fully managed, it reduces our burden of backups, infrastructure provisioning, etc.
+
+My data is in a relational format: the main data ill be storing is shortened URLs and click events, these would BENEFIT from being stored in a table (relational data structure) rather than a non relational database structure. Our data will be in a relational structure: one URL can have multiple clicks: these would make sense to be stored in a table format, which can then be queried using their keys.
+
+In addition to this, our dashboard calculates top URLs (number of clicks), PostgreSQL allows us to query the data using joins, aggregations and grouping: rather than having to structure the query in terms of a specific key structure in advance.
+
+Trade Offs: DynamoDB can be very fast; but complex queries may require additional data modelling.
+
+Overall RDS would be the best fit for this project.
 
 ## Infrastructure
 
