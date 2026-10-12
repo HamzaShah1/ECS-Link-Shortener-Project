@@ -6,6 +6,43 @@ A URL shortener with click analytics on AWS. Three services, one cluster.
 ## Architecture
 # insert AWS diagram here
 
+## Infrastructure
+In this project we made three application services and ran them on ECS using ECS fargate, all infrastructure was automated using IaC using Terraform.
+
+Incoming Traffic from ther internet is filtered through a WAF (web application firewall) so that we can block malicious HTTP/HTTPS requests before they reach the application, next they are routed using an ALB (application load balancer) which sits accross 2 public subnets; into 2 private subnets hosting our application services. The Database has a cache atatched infront of it using Amazon Redis; this is to store frequently used URLs so that they can be accessed quickly in the future.
+
+We have 3 main App serives: our API (app), our Worker, and our dashboard. each of them is Docekrised and container images stored on Amazon ECR, and then deployed and managed using Amazon ECS on AWS fargate.
+
+The API service: is the main entry point for the application. It accepts requests to shorten a URL, then generates the shortened URL and stores it in our database (Amazon RDS, which uses PostgreSQL). When a user clicks the shortened URL, the app retrieves the original URL and redirects the user. It also publishes click events for Amazon SQS to store the analytics.
+
+The Worker service: this polls the Amazon SQS queue we made for click events, it then writes the analytics to the database using postgreSQL. The reason why we used a queue is so that the API doesnt have to wait for the click events to be written into the database; we can simply pass this on as a background task; this maintains the user's experience (No long wait time whilst the analytics are written).  
+
+The Dashboard service: queries the database in order to get the data it needs.
+
+| Service | Language | Port | Description |
+|---------|----------|------|-------------|
+| **api** | Python | 8080 | Shortens URLs, handles redirects, tracks clicks, publishes events to SQS |
+| **worker** | Go | - | Polls SQS for click events, writes analytics to PostgreSQL |
+| **dashboard** | Go | 8081 | Analytics API - top URLs, click stats, hourly breakdowns, recent events |
+
+### Networking
+
+### Compute using ECS and ECS Fargate
+
+### Traffic Routing
+
+### Messaging - SQS
+
+### Database using RDS PostgreSQL
+
+### Caching using ElastiCache Redis
+
+### Amazon ECR and logging
+
+### IaC using Terraform
+
+### Security and IAM
+
 ## ENGINEERING DECISION: Why was RDS PostgreSQL chosen?
 I chose Amazon RDS because it is a FULLY MANAGED; relational; postgreSQL based database service. Rather than Amazon DynamoDB (which is non relational). Because it is fully managed, it reduces our burden of backups, infrastructure provisioning, etc.
 
@@ -17,9 +54,6 @@ Trade Offs: DynamoDB can be very fast; but complex queries may require additiona
 
 Overall RDS would be the best fit for this project.
 
-## Infrastructure
-In this project we made ___ 
-
 ## Docker
 
 ## CI/CD
@@ -27,14 +61,6 @@ In this project we made ___
 # Deployment Worlflow
 
 ## Security
-
-## Application Services
-
-| Service | Language | Port | Description |
-|---------|----------|------|-------------|
-| **api** | Python | 8080 | Shortens URLs, handles redirects, tracks clicks, publishes events to SQS |
-| **worker** | Go | - | Polls SQS for click events, writes analytics to PostgreSQL |
-| **dashboard** | Go | 8081 | Analytics API - top URLs, click stats, hourly breakdowns, recent events |
 
 ## Troubleshooting Problems
 
