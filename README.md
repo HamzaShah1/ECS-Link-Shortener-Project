@@ -18,6 +18,7 @@ Trade Offs: DynamoDB can be very fast; but complex queries may require additiona
 Overall RDS would be the best fit for this project.
 
 ## Infrastructure
+In this project we made ___ 
 
 ## Docker
 
@@ -27,11 +28,7 @@ Overall RDS would be the best fit for this project.
 
 ## Security
 
-## Local Development
-
-## Troubleshooting Problems
-
-## Services
+## Application Services
 
 | Service | Language | Port | Description |
 |---------|----------|------|-------------|
@@ -39,13 +36,9 @@ Overall RDS would be the best fit for this project.
 | **worker** | Go | - | Polls SQS for click events, writes analytics to PostgreSQL |
 | **dashboard** | Go | 8081 | Analytics API - top URLs, click stats, hourly breakdowns, recent events |
 
-Read the code. Environment variables and endpoints are in the source files.
+## Troubleshooting Problems
 
----
-
-## Your Job
-
-<mark>Write the Dockerfiles. Write the Terraform. Write the CI/CD pipeline. Deploy all three services to ECS Fargate on AWS.</mark>
+## Local Development
 
 ### Requirements
 
@@ -61,8 +54,7 @@ Read the code. Environment variables and endpoints are in the source files.
 - Terraform with remote state
 - Multi-stage Docker builds
 
-### The Deployment Question
-
+### Deployment
 You've deployed the service. Now a developer merges a PR and expects their change live within minutes - safely, with zero downtime.
 
 <mark>Design and document the full deployment workflow in your README. Code merge to live traffic </mark>
@@ -76,15 +68,6 @@ You've deployed the service. Now a developer merges a PR and expects their chang
 - [ ] Working deployment - all services healthy, end-to-end flow functional
 - [ ] README with your decisions, trade-offs and database justification
 
----
-
-## Local Development
-
-```bash
-docker compose up --build
-```
-
----22
 
 ## Grading
 
