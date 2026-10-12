@@ -3,6 +3,24 @@
 
 A URL shortener with click analytics on AWS. Three services, one cluster.
 
+## Architecture
+
+## Why was RDS PostgreSQL chosen?
+
+## Infrastructure
+
+## Docker
+
+## CI/CD
+
+# Deployment Worlflow
+
+## Security
+
+## Local Development
+
+## Troubleshooting Problems
+
 ## Services
 
 | Service | Language | Port | Description |
