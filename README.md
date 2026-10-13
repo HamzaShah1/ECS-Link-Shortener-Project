@@ -101,12 +101,27 @@ I configured an S3 bucket for Terraform to use as its remote state. The S3 bucke
 This allows terraform to safely store its tfstate outside of my local machine. S3 is also encrypted at rest, and the lockfile mechanism prevents concurrent state operations.
 
 ### 2i. Security and IAM
-IAM (Identity and Access Management) controls which users and services can access AWS resources and what actions they can perform. 
+#### IAM (Identity and Access Management)
+Controls which users and services can access AWS resources and what actions they can perform. 
 
 I used IAM roles for ECS tasks and Github Actions:
 - to allow ECS to perform actions from ECR, send logs, etc.
 - Application task roles, to give the 3 app services the permissions they need to access AWS resources.
 - Github Actions role; to allow the CI/CD pipeline to deploy to AWS without storing long lived AWS access keys in github.
+
+#### GitHub Actions OIDC
+OpenID connect (OIDC) allows Github Actions to be authenticated with AWS; instead of storing long lived credentials in GitHub Secrets, GitHub Actions gains a temporary credentials using an IAM role. This reduces the risk associated with long lived credentials being leaked.
+
+#### Least Privilege
+Throughout the project, each role was only given the permissions it needed to complete its job.
+
+For example the worker needs access to the SQS queue; but not more.
+
+#### Secrets
+Task definitions recieve their database connection string from AWS secrets manager, rather than hardcoding it.
+
+#### Network Security
+Another security aspect is that private subnets, security groups, and VPC endpoints were used to limit exposure to the public internet.
 
 ## 3. ENGINEERING DECISION: Why was RDS PostgreSQL chosen?
 I chose Amazon RDS because it is a FULLY MANAGED; relational; postgreSQL based database service. Rather than Amazon DynamoDB (which is non relational). Because it is fully managed, it reduces our burden of backups, infrastructure provisioning, etc.
