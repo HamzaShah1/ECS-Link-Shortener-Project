@@ -135,10 +135,31 @@ Trade Offs: DynamoDB can be very fast; but complex queries may require additiona
 Overall RDS would be the best fit for this project.
 
 ## 4. Docker
+I used Docker to containerise each applicaiton: API, Worker, and Dashboard. Each service has its own dockerfile to define its image, dependencies, application code, and startup commands.
+
+This allows each sertivce to run consistently accross different environments.
+
+You can build the docker images locally using __docker compose up --build__
+
+Once Built, the docker images are pushed to Amazon ECR to store them using Github actions.
+
+Next ECS fargate pulls the images from ECR and runs the containers.
 
 ## 5. CI/CD
+GitHub Actions were used to automate the testing, integration and deployment of our app. I configured this by writing 2 workflows: 1 for CI and one for CD: I wrote both workflows from scratch in yaml.
 
-# 6. Deployment Worlflow
+### How it works:
+When changes are pushed to the main branch, the CI pipeline builds and tests the application services, then builds docker images and pushed them to ECR using commit specific SHA tags, and a latest tag.
+
+![The CI workflow: Build then push to ECR](images/CI.png)
+
+![Build steps](images/Build.png)
+![Publishing the build to ECR steps](images/publish-to-ECR.png)
+
+After this, the CD pipeline deploys the updated task definitions to ECS Fargate and waits for serives to become stable.
+![CD deployment steps](images/CD-deploy.png)
+
+## 6. Deployment Worlflow
 
 ## 7. Security
 
