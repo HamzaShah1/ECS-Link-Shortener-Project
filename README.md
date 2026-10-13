@@ -85,8 +85,28 @@ All 3 aplicaiton services are containerised using Docker, these docker images ar
 ![3 Logging groups](images/Cloudwatch-log-groups.png)
 
 ### 2h. IaC using Terraform
+Instead of using the AWS console to create these above resources, I used Terraform to implement them in an IAC (Infrastructure as Code) fashion.
+
+The resources were defined in configuration files, and terraform uses those files to create the infra when needed.
+
+The flow to set up this infrastructure using Terraform is the following:
+
+__terraform plan__ [shows planned changes before applying] -> __terraform apply__ [will ask for confirmation then create or update the infra according to the configuration]
+
+#### Terraform Remote State
+I configured an S3 bucket for Terraform to use as its remote state. The S3 bucket was configured with:
+- Versioning
+- Encryption
+- S3 Lockfile
+This allows terraform to safely store its tfstate outside of my local machine. S3 is also encrypted at rest, and the lockfile mechanism prevents concurrent state operations.
 
 ### 2i. Security and IAM
+IAM (Identity and Access Management) controls which users and services can access AWS resources and what actions they can perform. 
+
+I used IAM roles for ECS tasks and Github Actions:
+- to allow ECS to perform actions from ECR, send logs, etc.
+- Application task roles, to give the 3 app services the permissions they need to access AWS resources.
+- Github Actions role; to allow the CI/CD pipeline to deploy to AWS without storing long lived AWS access keys in github.
 
 ## 3. ENGINEERING DECISION: Why was RDS PostgreSQL chosen?
 I chose Amazon RDS because it is a FULLY MANAGED; relational; postgreSQL based database service. Rather than Amazon DynamoDB (which is non relational). Because it is fully managed, it reduces our burden of backups, infrastructure provisioning, etc.
