@@ -3,10 +3,10 @@
 
 A URL shortener with click analytics on AWS. Three services, one cluster.
 
-## Architecture
+## 1. Architecture
 # insert AWS diagram here
 
-## Infrastructure
+## 2. Infrastructure
 In this project we made three application services and ran them on ECS using ECS fargate, all infrastructure was automated using IaC using Terraform.
 
 Incoming Traffic from ther internet is filtered through a WAF (web application firewall) so that we can block malicious HTTP/HTTPS requests before they reach the application, next they are routed using an ALB (application load balancer) which sits accross 2 public subnets; into 2 private subnets hosting our application services. The Database has a cache atatched infront of it using Amazon Redis; this is to store frequently used URLs so that they can be accessed quickly in the future.
@@ -17,7 +17,7 @@ The API service: is the main entry point for the application. It accepts request
 
 The Worker service: this polls the Amazon SQS queue we made for click events, it then writes the analytics to the database using postgreSQL. The reason why we used a queue is so that the API doesnt have to wait for the click events to be written into the database; we can simply pass this on as a background task; this maintains the user's experience (No long wait time whilst the analytics are written).  
 
-The Dashboard service: queries the database in order to get the data it needs.
+The Dashboard service: exposes API endpoints that allow us to query postgreSQL to retrieve and calulate analytics information. It then returns this data to the frontend allowing users to see the analytics.
 
 | Service | Language | Port | Description |
 |---------|----------|------|-------------|
@@ -25,25 +25,45 @@ The Dashboard service: queries the database in order to get the data it needs.
 | **worker** | Go | - | Polls SQS for click events, writes analytics to PostgreSQL |
 | **dashboard** | Go | 8081 | Analytics API - top URLs, click stats, hourly breakdowns, recent events |
 
-### Networking
+### 2a. Networking
+For this project, I created a VPC across 2 availibilty zones: with 2 public and 2 private subnets. This is so that we can have high availibility, and the private subnets were created seperated from the public subnets so that our AWS services dont have internet access by default; keeping them secure and protected against unauthorised access and direct exposure to the public internet.
 
-### Compute using ECS and ECS Fargate
+All of the ECS services run in private subnets, with no public IP. This is cheaper, but it also creates a networking challenge: how will the containers pull their docker images from Amazon ECR without access to the internet?
 
-### Traffic Routing
+![VPC endpoint in terraform](images/VPC-endpoints.png)
 
-### Messaging - SQS
+Private VPC endpoints were used to provide private access to the required AWS services without allowing public internet access (Interface endpoints were used). Using VPC endpoints reduces our NAT gateway cost (another Engineering decision to reduce cost).
 
-### Database using RDS PostgreSQL
+security groups: security groups were used throughout to make sure that each service had __least privilege__. Components were allowed to do only their job and nothing more.
 
-### Caching using ElastiCache Redis
+### 2b. Compute using ECS and ECS Fargate
+We created an ECS cluster to host our 3 app services (api, worker, dashboard). I used ECS task definitions to define the desired number of applications that should run, for example the API service has a desired task count of 1: if it stops; ECS starts a replacement.
 
-### Amazon ECR and logging
+AWS Fargate was used to manage the underlying compute infrastructure -> this means we dont have to create the EC2 instances ourselves and manage their operating systems, patch servers, etc. with ECS Fargate; you only need to specify the resources that the container needs such as CPU and memory; and AWS ECS fargate runs the rest.
 
-### IaC using Terraform
+#### Setting up rolling deployments (ZERO DOWNTIME)
+I configured ECS for rolling deployments; this means in a new deployment, old containers will be replaced one by one with newer versions without taking the application offline.
 
-### Security and IAM
+The configuration uses:
+- Minimum healthy capacity: 100% — ECS aims to keep the existing healthy tasks running at 100% while deploying the new version.
+- Maximum deployment capacity: 200% — ECS can temporarily run additional tasks during a deployment, allowing new tasks to start before old ones are stopped.
+- Deployment circuit breaker with automatic rollback — if a deployment fails to reach a healthy state, ECS can roll back to the previous deployment.
 
-## ENGINEERING DECISION: Why was RDS PostgreSQL chosen?
+### 2c. Traffic Routing
+
+### 2d. Messaging - SQS
+
+### 2e. Database using RDS PostgreSQL
+
+### 2f. Caching using ElastiCache Redis
+
+### 2g. Amazon ECR and logging
+
+### 2h. IaC using Terraform
+
+### 2i. Security and IAM
+
+## 3. ENGINEERING DECISION: Why was RDS PostgreSQL chosen?
 I chose Amazon RDS because it is a FULLY MANAGED; relational; postgreSQL based database service. Rather than Amazon DynamoDB (which is non relational). Because it is fully managed, it reduces our burden of backups, infrastructure provisioning, etc.
 
 My data is in a relational format: the main data ill be storing is shortened URLs and click events, these would BENEFIT from being stored in a table (relational data structure) rather than a non relational database structure. Our data will be in a relational structure: one URL can have multiple clicks: these would make sense to be stored in a table format, which can then be queried using their keys.
@@ -54,17 +74,17 @@ Trade Offs: DynamoDB can be very fast; but complex queries may require additiona
 
 Overall RDS would be the best fit for this project.
 
-## Docker
+## 4. Docker
 
-## CI/CD
+## 5. CI/CD
 
-# Deployment Worlflow
+# 6. Deployment Worlflow
 
-## Security
+## 7. Security
 
-## Troubleshooting Problems
+## 8. Troubleshooting Problems
 
-## Local Development
+## 9. Local Development
 
 ### Requirements
 
