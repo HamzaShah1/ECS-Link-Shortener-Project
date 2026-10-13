@@ -9,7 +9,7 @@ A URL shortener with click analytics on AWS. Three services, one cluster.
 ## 2. Infrastructure
 In this project we made three application services and ran them on ECS using ECS fargate, all infrastructure was automated using IaC using Terraform.
 
-Incoming Traffic from ther internet is filtered through a WAF (web application firewall) so that we can block malicious HTTP/HTTPS requests before they reach the application, next they are routed using an ALB (application load balancer) which sits accross 2 public subnets; into 2 private subnets hosting our application services. The Database has a cache atatched infront of it using Amazon Redis; this is to store frequently used URLs so that they can be accessed quickly in the future.
+Incoming Traffic from the internet is filtered through a WAF (web application firewall) so that we can block malicious HTTP/HTTPS requests before they reach the application, next they are routed using an ALB (application load balancer) which sits accross 2 public subnets; into 2 private subnets hosting our application services. The Database has a cache atatched infront of it using Amazon Redis; this is to store frequently used URLs so that they can be accessed quickly in the future.
 
 We have 3 main App serives: our API (app), our Worker, and our dashboard. each of them is Docekrised and container images stored on Amazon ECR, and then deployed and managed using Amazon ECS on AWS fargate.
 
@@ -50,14 +50,39 @@ The configuration uses:
 - Deployment circuit breaker with automatic rollback — if a deployment fails to reach a healthy state, ECS can roll back to the previous deployment.
 
 ### 2c. Traffic Routing
+Incoming traffic is filtered through a Web Application Firewall (WAF); to block malicious HTTP/HTTPS requests before they reach the application, next they are routed using an ALB(application load balancer) to the appropriate targets. Host based routing is used to route the root domain (https://ecs-link-shortener-project) to the API, whilst (dashboard.ecs-link-shortener-project.com) routes to the dashboard.
+
+Health checks determine whether the backend targets are healthy enough to recieve traffic.
+
+![simple diagram denoting traffic flow](images/Traffic-routing.png)
 
 ### 2d. Messaging - SQS
+Amazon SQS (Simple Queue Service) is a managed message queue. It allows for tasks to be done in the background without affecting the main application experience. 
+
+When people click a link: we want analytics to be recorded, BUT it would be distruptive to make the user wait till the analytics are written to PostgreSQL. Instead we made an SQS queue to seperate the immediate redirect (to the shortened links URL), from the background task (writing analytics to the database).
+
+After the click even has been published to SQS, the worker task waits for it and processes it accordingly (Go worker application service).
+
+SQS gives us three benefits: Faster responses (to redirected URL), decoupling the API and worker, and Buffering; if clicks arrive faster than the worker processes them, the SQS queue holds the messages, waiting for the worker.
 
 ### 2e. Database using RDS PostgreSQL
+Our database is  hosted using Amazon RDS, which is a fully managed relational databse service. [The engineering decision for why RDS was chosen was explained in this section](#3-engineering-decision-why-was-rds-postgresql-chosen).
 
 ### 2f. Caching using ElastiCache Redis
+In order to store frequenctly accessed data, Amazon Elasticache Redis was used. This allows for the application to retrieve it faster than repeatedly fetching it from the main database. 
+
+Redis is the caching layer between the API and the PostgreSQL Database. 
+
+This improves performance; the cached data can be served quickly rather than fetching from the database each time, It reduces load on the database; if something is frequently accessed, it doesnt need to be retrieved every time from the database, and lastly; AWS manages the infrastructure (it is a fully managed service).
 
 ### 2g. Amazon ECR and logging
+All 3 aplicaiton services are containerised using Docker, these docker images are stored in Amazon ECR (Elastic Container Registry). The ECS task definitions reference images stored in ECR.
+
+![The 3 container registires in ECR](images/ECR-repos.png)
+
+3 cloudwatch log groups were made in terraform; these send their logging outputs to the corresponding log group (using awslogs logging driver).
+
+![3 Logging groups](images/Cloudwatch-log-groups.png)
 
 ### 2h. IaC using Terraform
 
