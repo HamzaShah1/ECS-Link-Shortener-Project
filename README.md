@@ -1,7 +1,11 @@
 
 # URL Shortener - ECS Project
 
-A URL shortener with click analytics on AWS. Three services, one cluster.
+A URL link shortener with click analytics on AWS. One ECS cluster was used to run 3 application services.
+
+Throughout this project I used the following AWS Services, and gained skills in the following technologies:
+
+Amazon VPC, public and private subnets, Internet Gateway (IGW), VPC endpoints, security groups, AWS WAF, Application Load Balancer (ALB), Amazon ECS with AWS Fargate, Amazon ECR, Amazon RDS for PostgreSQL, Amazon ElastiCache for Redis, Amazon SQS, AWS Secrets Manager, IAM, GitHub Actions with OIDC, Terraform for Infrastructure as Code, Amazon S3 for remote Terraform state, and Amazon CloudWatch for logging.
 
 ## 1. Architecture
 # insert AWS diagram here
