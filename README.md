@@ -162,9 +162,9 @@ After this, the CD pipeline deploys the updated task definitions to ECS Fargate 
 
 Once the new versions of the app have been pushed to ECS Fargate; ECS uses Rolling Deployments to replace existing tasks with new ones.
 
-#### Full Deployment workflow
+### Full Deployment workflow
 Here is the full deployment workflow from the moment the code is pushed and merged:
-##### CI
+### CI
 1. Code Merged, the new application code is pushed merged and into main.
 2. When code merged into main; the CI.yml workflow is triggered. When ci.yml starts to run, it checks out the code, sets up python and go, and downloads all dependencies.
 3. Next; Python, The Dashboard, and Worker applications are tested: using pytest and go test; respectively.
@@ -173,7 +173,7 @@ Here is the full deployment workflow from the moment the code is pushed and merg
  - AWS credentials are verified and authenticated using OIDC. OIDC allows github actions to assume the configured IAM Role and obtain temporary credentials instead of long lived secrets stored in github.
  - Then the images are built and pushed using docker commands (Docker buildx and docker --push).
 
-##### CD
+### CD
 6. CD awaits CI to successfully pass, AND: the push to be to __main.__
 7. It then checks out the code and configures AWS credentials using OIDC again (to ensure long lived credentials are not saved to github).
 8. Then we use the __base commit__ to check which files have changed.
