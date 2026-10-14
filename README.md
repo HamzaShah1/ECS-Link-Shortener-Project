@@ -157,15 +157,33 @@ When changes are pushed to the main branch, the CI pipeline builds and tests the
 ![Publishing the build to ECR steps](images/publish-to-ECR.png)
 
 After this, the CD pipeline deploys the updated task definitions to ECS Fargate and waits for serives to become stable.
+
 ![CD deployment steps](images/CD-deploy.png)
 
-## 6. Deployment Worlflow
+Once the new versions of the app have been pushed to ECS Fargate; ECS uses Rolling Deployments to replace existing tasks with new ones.
 
-## 7. Security
+#### Full Deployment workflow
+Here is the full deployment workflow from the moment the code is pushed and merged:
+##### CI
+1. Code Merged, the new application code is pushed merged and into main.
+2. When code merged into main; the CI.yml workflow is triggered. When ci.yml starts to run, it checks out the code, sets up python and go, and downloads all dependencies.
+3. Next; Python, The Dashboard, and Worker applications are tested: using pytest and go test; respectively.
+4. If these pass, then the app docker images are made. Which leads onto the next job in ci.yml : publishing to ecr
+5. Once the app has passed all tests, it is pushed to Amazon ECR (Elastic Container Registry). Where the Images are stored till infrastructure needs to be created. The process for pushing the docker images to ECR is:
+ - AWS credentials are verified and authenticated using OIDC. OIDC allows github actions to assume the configured IAM Role and obtain temporary credentials instead of long lived secrets stored in github.
+ - Then the images are built and pushed using docker commands (Docker buildx and docker --push).
 
-## 8. Troubleshooting Problems
+##### CD
+6. CD awaits CI to successfully pass, AND: the push to be to __main.__
+7. It then checks out the code and configures AWS credentials using OIDC again (to ensure long lived credentials are not saved to github).
+8. Then we use the __base commit__ to check which files have changed.
+9. I used filters / logic to check which file has changed:
 
-## 9. Local Development
+![Detecting changes in app using filters in CD.yml](images/detect-changes-cd.png)
+
+10. we need to keep track of which files were changed so that we know whether to recreate the infrastructure or not; if something which doesnt have an effect on the app was changed (like the README.md, then we dont want to recreate all infrastructure again as it would incur costs and is unnecesary).
+11. Next the appropriate changed services are redeployed: using a rolling deployment (old services are gradually replaced by new services whilst they become healthy). Only changed services are remade; if nothing has changed then there is no need to redploy.
+![Changed services](images/show-changed-services.png)
 
 ### Requirements
 
@@ -181,30 +199,3 @@ After this, the CD pipeline deploys the updated task definitions to ECS Fargate 
 - Terraform with remote state
 - Multi-stage Docker builds
 
-### Deployment
-You've deployed the service. Now a developer merges a PR and expects their change live within minutes - safely, with zero downtime.
-
-<mark>Design and document the full deployment workflow in your README. Code merge to live traffic </mark>
-
-### Deliverables
-
-- [ ] Dockerfiles (one per service)
-- [ ] Terraform for all infrastructure
-- [ ] GitHub Actions CI/CD pipeline
-- [ ] Deployment workflow documentation
-- [ ] Working deployment - all services healthy, end-to-end flow functional
-- [ ] README with your decisions, trade-offs and database justification
-
-
-## Grading
-
-- All three services running and healthy
-- End-to-end flow works (shorten -> redirect -> analytics)
-- Zero-downtime deployments with auto-rollback on health check failure
-- No NAT gateways, no long-lived credentials, no hardcoded secrets
-- Deployment workflow section present and coherent
-- You can explain every resource you created
-
-**Tear down when done.** ALB + WAF cost money even idle.
-
-[LocalStack](https://docs.localstack.cloud/getting-started/) works for local testing of SQS.
