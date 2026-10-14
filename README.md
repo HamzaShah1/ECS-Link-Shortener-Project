@@ -1,6 +1,10 @@
 
 # URL Shortener - ECS Project
 
+# Watch the demo
+[![ECS v2 Demo](images/ECSv2-Demo/ECSv2-Demo-Cover.jpg)](https://github.com/user-attachments/assets/e14a65fc-614e-4a58-93e7-da24bfc674ae)
+
+
 A URL link shortener with click analytics on AWS. One ECS cluster was used to run 3 application services.
 
 Throughout this project I used the following AWS Services, and gained skills in the following technologies:
