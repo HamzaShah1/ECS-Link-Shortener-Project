@@ -185,17 +185,4 @@ Here is the full deployment workflow from the moment the code is pushed and merg
 11. Next the appropriate changed services are redeployed: using a rolling deployment (old services are gradually replaced by new services whilst they become healthy). Only changed services are remade; if nothing has changed then there is no need to redploy.
 ![Changed services](images/show-changed-services.png)
 
-### Requirements
-
-- ECS Fargate - three separate services, one cluster
-- Application Load Balancer with WAF routing to the correct service
-- Database: DynamoDB or RDS PostgreSQL - you choose, you justify
-- ElastiCache Redis (caching layer for the API)
-- SQS queue (click events from API to worker)
-- VPC with private subnets. No NAT gateways.
-- GitHub Actions with OIDC. No long-lived AWS credentials.
-- Zero-downtime deployments with rollback on failure
-- Least-privilege IAM throughout
-- Terraform with remote state
-- Multi-stage Docker builds
 
